@@ -1,2 +1,3 @@
 # logging
-Practical logging facility
+
+Practical logging facility for Go.
