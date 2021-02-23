@@ -20,7 +20,10 @@ func (l logger) fmt(format string, args ...interface{}) []string {
 	ts := time.Now().Format("2006-01-02 15:04:05 ")
 	pad := strings.Repeat(" ", len(ts))
 	var msg []string
-	for i, m := range strings.Split(fmt.Sprintf(format, args...), "\n") {
+	if len(args) > 0 {
+		format = fmt.Sprintf(format, args...)
+	}
+	for i, m := range strings.Split(format, "\n") {
 		m = strings.TrimRight(m, " \n\r\t")
 		if m == "" {
 			continue
