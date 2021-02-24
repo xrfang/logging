@@ -10,7 +10,6 @@ import (
 
 func task() {
 	log := logging.Open("task.log")
-	defer log.Flush()
 	defer log.Catch(func(e interface{}) {
 		if e != nil {
 			fmt.Println("catched something, which we've already logged.")
@@ -24,7 +23,7 @@ func task() {
 
 func main() {
 	logging.Init("", logging.LevelTrace, &logging.Options{Split: 10240, Keep: 3})
-	defer logging.Flush()
+	defer logging.Finish()
 	log := logging.Open("app.log")
 	log.Print("Application launched")
 	task()

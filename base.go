@@ -87,25 +87,22 @@ func NewLogger(path string, mode LogLevel, opts *Options) (*LogHandler, error) {
 		ttl := time.Duration(lh.opts.Cache) * time.Second
 		timer := time.NewTimer(time.Second)
 		for {
-			forceFlush := false
-			flushQueue := ""
+			finished := false
 			select {
 			case msg := <-lh.ch:
 				if len(msg.mesg.text) == 0 {
-					forceFlush = true
-					flushQueue = msg.name
+					finished = true
 				} else {
 					lh.cache[msg.name] = append(lh.cache[msg.name], msg.mesg)
 				}
 			case <-timer.C:
 			}
 			for n, q := range lh.cache {
-				if (forceFlush && (flushQueue == "" || flushQueue == n)) ||
-					time.Since(q[0].recv) >= ttl {
+				if finished || time.Since(q[0].recv) >= ttl {
 					lh.flush(n)
 				}
 			}
-			if forceFlush && flushQueue == "" {
+			if finished {
 				break
 			}
 		}
@@ -178,7 +175,7 @@ func (lh *LogHandler) flush(name string) {
 	}
 }
 
-func (lh *LogHandler) Flush() {
+func (lh *LogHandler) Close() {
 	lh.ch <- message{}
 	<-lh.quit
 }
@@ -198,6 +195,6 @@ func Open(name string) Logger {
 	return defaultLogHandler.Open(name)
 }
 
-func Flush() {
-	defaultLogHandler.Flush()
+func Finish() {
+	defaultLogHandler.Close()
 }
