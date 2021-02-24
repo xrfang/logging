@@ -1,9 +1,14 @@
 package logging
 
 import (
+	"compress/gzip"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -38,6 +43,7 @@ type (
 		cache map[string][]batch
 		ch    chan message
 		quit  chan bool
+		wg    sync.WaitGroup
 	}
 )
 
@@ -103,19 +109,53 @@ func NewLogger(path string, mode LogLevel, opts *Options) (*logHandler, error) {
 				break
 			}
 		}
+		lh.wg.Wait()
 		lh.quit <- true
 	}()
 	return &lh, nil
 }
 
 func (lh *logHandler) rotate(name string) {
-	fmt.Printf("TODO: rotate '%s'...\n", name)
+	defer lh.wg.Done()
+	oldLogs, _ := filepath.Glob(filepath.Join(lh.path, name+".*"))
+	var backups []string
+	for _, ol := range oldLogs {
+		if strings.HasSuffix(ol, ".gz") {
+			backups = append(backups, ol)
+			continue
+		}
+		func(fn string) {
+			defer func() {
+				if e := recover(); e != nil {
+					fmt.Fprintln(os.Stderr, trace("logHandler.rotate: %v", e))
+					return
+				}
+				os.Remove(fn)
+				backups = append(backups, fn+".gz")
+			}()
+			f, err := os.Open(fn)
+			assert(err)
+			defer f.Close()
+			g, err := os.Create(fn + ".gz")
+			assert(err)
+			defer func() { assert(g.Close()) }()
+			zw := gzip.NewWriter(g)
+			defer func() { assert(zw.Close()) }()
+			_, err = io.Copy(zw, f)
+			assert(err)
+		}(ol)
+	}
+	sort.Slice(backups, func(i, j int) bool { return backups[i] < backups[j] })
+	for len(backups) >= lh.opts.Keep {
+		os.Remove(backups[0])
+		backups = backups[1:]
+	}
 }
 
 func (lh *logHandler) flush(name string) {
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Printf(trace("logHandler.flush: %v", e).Error())
+			fmt.Fprintln(os.Stderr, trace("logHandler.flush: %v", e))
 		}
 		delete(lh.cache, name)
 	}()
@@ -124,6 +164,7 @@ func (lh *logHandler) flush(name string) {
 	if err == nil && st.Size() > int64(lh.opts.Split) {
 		old := fn + st.ModTime().Format(".2006-01-02_15.04.05")
 		assert(os.Rename(fn, old))
+		lh.wg.Add(1)
 		go lh.rotate(name)
 	}
 	f, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, lh.opts.fMode)
