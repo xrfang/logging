@@ -36,7 +36,7 @@ type (
 		Queue int         //LOG队列长度，默认为64
 		fMode os.FileMode //LOG文件的读写权限，由目录权限计算得出
 	}
-	logHandler struct {
+	LogHandler struct {
 		mode  LogLevel
 		path  string
 		opts  *Options
@@ -47,7 +47,7 @@ type (
 	}
 )
 
-func NewLogger(path string, mode LogLevel, opts *Options) (*logHandler, error) {
+func NewLogger(path string, mode LogLevel, opts *Options) (*LogHandler, error) {
 	if opts == nil {
 		opts = new(Options)
 	}
@@ -75,7 +75,7 @@ func NewLogger(path string, mode LogLevel, opts *Options) (*logHandler, error) {
 	if err != nil {
 		return nil, err
 	}
-	lh := logHandler{
+	lh := LogHandler{
 		mode:  mode,
 		path:  path,
 		opts:  opts,
@@ -115,7 +115,7 @@ func NewLogger(path string, mode LogLevel, opts *Options) (*logHandler, error) {
 	return &lh, nil
 }
 
-func (lh *logHandler) rotate(name string) {
+func (lh *LogHandler) rotate(name string) {
 	defer lh.wg.Done()
 	oldLogs, _ := filepath.Glob(filepath.Join(lh.path, name+".*"))
 	var backups []string
@@ -127,7 +127,7 @@ func (lh *logHandler) rotate(name string) {
 		func(fn string) {
 			defer func() {
 				if e := recover(); e != nil {
-					fmt.Fprintln(os.Stderr, trace("logHandler.rotate: %v", e))
+					fmt.Fprintln(os.Stderr, trace("LogHandler.rotate: %v", e))
 					return
 				}
 				os.Remove(fn)
@@ -152,10 +152,10 @@ func (lh *logHandler) rotate(name string) {
 	}
 }
 
-func (lh *logHandler) flush(name string) {
+func (lh *LogHandler) flush(name string) {
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Fprintln(os.Stderr, trace("logHandler.flush: %v", e))
+			fmt.Fprintln(os.Stderr, trace("LogHandler.flush: %v", e))
 		}
 		delete(lh.cache, name)
 	}()
@@ -178,16 +178,16 @@ func (lh *logHandler) flush(name string) {
 	}
 }
 
-func (lh *logHandler) Flush() {
+func (lh *LogHandler) Flush() {
 	lh.ch <- message{}
 	<-lh.quit
 }
 
-func (lh *logHandler) Open(name string) Logger {
+func (lh *LogHandler) Open(name string) Logger {
 	return Logger{name: name, mode: lh.mode, ch: lh.ch}
 }
 
-var defaultLogHandler *logHandler
+var defaultLogHandler *LogHandler
 
 func Init(path string, mode LogLevel, opts *Options) (err error) {
 	defaultLogHandler, err = NewLogger(path, mode, opts)
