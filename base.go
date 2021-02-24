@@ -175,6 +175,10 @@ func (lh *LogHandler) flush(name string) {
 	}
 }
 
+func (lh *LogHandler) Path() string {
+	return lh.path
+}
+
 func (lh *LogHandler) Close() {
 	wait := make(chan struct{})
 	lh.ch <- message{rply: wait}
@@ -182,7 +186,7 @@ func (lh *LogHandler) Close() {
 }
 
 func (lh *LogHandler) Open(name string) Logger {
-	return Logger{name: name, mode: lh.mode, ch: lh.ch}
+	return Logger{name: name, h: lh}
 }
 
 var defaultLogHandler *LogHandler
@@ -194,6 +198,10 @@ func Init(path string, mode LogLevel, opts *Options) (err error) {
 
 func Open(name string) Logger {
 	return defaultLogHandler.Open(name)
+}
+
+func Path() string {
+	return defaultLogHandler.Path()
 }
 
 func Finish() {

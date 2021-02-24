@@ -10,7 +10,10 @@ import (
 
 func task() {
 	log := logging.Open("task.log")
-	defer log.Flush() //不必要，仅演示Flush()的用途
+	defer func() {
+		log.Flush()
+		fmt.Println("flushed:", log.Path())
+	}()
 	defer log.Catch(func(e interface{}) {
 		if e != nil {
 			fmt.Println("catched something, which we've already logged.")
@@ -25,6 +28,7 @@ func task() {
 func main() {
 	logging.Init("", logging.LevelTrace, &logging.Options{Split: 10240, Keep: 3})
 	defer logging.Finish()
+	fmt.Println("logs are stored at:", logging.Path())
 	log := logging.Open("app.log")
 	log.Print("Application launched")
 	task()

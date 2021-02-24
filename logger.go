@@ -2,6 +2,7 @@ package logging
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -11,8 +12,7 @@ import (
 type (
 	Logger struct {
 		name string
-		mode LogLevel
-		ch   chan message
+		h    *LogHandler
 	}
 )
 
@@ -38,7 +38,7 @@ func (l Logger) fmt(format string, args ...interface{}) []string {
 }
 
 func (l Logger) Print(mesg string, args ...interface{}) {
-	l.ch <- message{
+	l.h.ch <- message{
 		name: l.name,
 		mesg: batch{
 			text: l.fmt(mesg, args...),
@@ -48,7 +48,7 @@ func (l Logger) Print(mesg string, args ...interface{}) {
 }
 
 func (l Logger) Debug(mesg string, args ...interface{}) {
-	switch l.mode {
+	switch l.h.mode {
 	case LevelDebug:
 		l.Print(mesg, args...)
 	case LevelTrace:
@@ -67,17 +67,21 @@ func (l Logger) Catch(handler func(interface{})) {
 }
 
 func (l Logger) Dump(data []byte, mesg string, args ...interface{}) {
-	if l.mode < LevelDebug {
+	if l.h.mode < LevelDebug {
 		return
 	}
 	l.Print(mesg, args...)
-	if l.mode > LevelDebug {
+	if l.h.mode > LevelDebug {
 		l.Print(hxdump.DumpWithStyle(data, hxdump.Style{Narrow: true}))
 	}
 }
 
 func (l Logger) Flush() {
 	wait := make(chan struct{})
-	l.ch <- message{name: l.name, rply: wait}
+	l.h.ch <- message{name: l.name, rply: wait}
 	<-wait
+}
+
+func (l Logger) Path() string {
+	return filepath.Join(l.h.Path(), l.name)
 }
