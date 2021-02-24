@@ -113,7 +113,6 @@ func (lh *logHandler) rotate(name string) {
 }
 
 func (lh *logHandler) flush(name string) {
-	logs := lh.cache[name]
 	defer func() {
 		if e := recover(); e != nil {
 			fmt.Printf(trace("logHandler.flush: %v", e).Error())
@@ -121,19 +120,16 @@ func (lh *logHandler) flush(name string) {
 		delete(lh.cache, name)
 	}()
 	fn := filepath.Join(lh.path, name)
+	st, err := os.Stat(fn)
+	if err == nil && st.Size() > int64(lh.opts.Split) {
+		old := fn + st.ModTime().Format(".2006-01-02_15.04.05")
+		assert(os.Rename(fn, old))
+		go lh.rotate(name)
+	}
 	f, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, lh.opts.fMode)
 	assert(err)
-	defer func() {
-		assert(f.Close())
-		st, err := os.Stat(f.Name())
-		assert(err)
-		if st.Size() >= int64(lh.opts.Split) {
-			old := fn + st.ModTime().Format(".2006-01-02_15.04.05")
-			assert(os.Rename(fn, old))
-			go lh.rotate(name)
-		}
-	}()
-	for _, b := range logs {
+	defer func() { assert(f.Close()) }()
+	for _, b := range lh.cache[name] {
 		for _, line := range b.text {
 			_, err = fmt.Fprintln(f, line)
 			assert(err)
