@@ -183,8 +183,8 @@ func (lh *logHandler) Flush() {
 	<-lh.quit
 }
 
-func (lh *logHandler) Open(name string) logger {
-	return logger{name: name, mode: lh.mode, ch: lh.ch}
+func (lh *logHandler) Open(name string) Logger {
+	return Logger{name: name, mode: lh.mode, ch: lh.ch}
 }
 
 var defaultLogHandler *logHandler
@@ -194,7 +194,7 @@ func Init(path string, mode LogLevel, opts *Options) (err error) {
 	return err
 }
 
-func Open(name string) logger {
+func Open(name string) Logger {
 	return defaultLogHandler.Open(name)
 }
 

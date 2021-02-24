@@ -9,14 +9,14 @@ import (
 )
 
 type (
-	logger struct {
+	Logger struct {
 		name string
 		mode LogLevel
 		ch   chan message
 	}
 )
 
-func (l logger) fmt(format string, args ...interface{}) []string {
+func (l Logger) fmt(format string, args ...interface{}) []string {
 	ts := time.Now().Format("2006-01-02 15:04:05 ")
 	pad := strings.Repeat(" ", len(ts))
 	var msg []string
@@ -37,7 +37,7 @@ func (l logger) fmt(format string, args ...interface{}) []string {
 	return msg
 }
 
-func (l logger) Print(mesg string, args ...interface{}) {
+func (l Logger) Print(mesg string, args ...interface{}) {
 	l.ch <- message{
 		name: l.name,
 		mesg: batch{
@@ -47,7 +47,7 @@ func (l logger) Print(mesg string, args ...interface{}) {
 	}
 }
 
-func (l logger) Debug(mesg string, args ...interface{}) {
+func (l Logger) Debug(mesg string, args ...interface{}) {
 	switch l.mode {
 	case LevelDebug:
 		l.Print(mesg, args...)
@@ -56,7 +56,7 @@ func (l logger) Debug(mesg string, args ...interface{}) {
 	}
 }
 
-func (l logger) Catch(handler func(interface{})) {
+func (l Logger) Catch(handler func(interface{})) {
 	e := recover()
 	if e != nil {
 		l.Print(trace("%v", e).Error())
@@ -66,7 +66,7 @@ func (l logger) Catch(handler func(interface{})) {
 	}
 }
 
-func (l logger) Dump(data []byte, mesg string, args ...interface{}) {
+func (l Logger) Dump(data []byte, mesg string, args ...interface{}) {
 	if l.mode < LevelDebug {
 		return
 	}
@@ -76,6 +76,6 @@ func (l logger) Dump(data []byte, mesg string, args ...interface{}) {
 	}
 }
 
-func (l logger) Flush() {
+func (l Logger) Flush() {
 	l.ch <- message{name: l.name}
 }
