@@ -7,8 +7,15 @@ import (
 	"time"
 )
 
+const (
+	LevelBrief = 0
+	LevelDebug = 1
+	LevelTrace = 2
+)
+
 type (
-	batch struct {
+	LogLevel = int
+	batch    struct {
 		text []string
 		recv time.Time
 	}
@@ -25,7 +32,7 @@ type (
 		fMode os.FileMode //LOG文件的读写权限，由目录权限计算得出
 	}
 	logHandler struct {
-		mode  int //0=正常；1=debug；2=trace
+		mode  LogLevel
 		path  string
 		opts  *logOpts
 		cache map[string][]batch
@@ -34,7 +41,7 @@ type (
 	}
 )
 
-func NewLogger(path string, mode int, opts *logOpts) (*logHandler, error) {
+func NewLogger(path string, mode LogLevel, opts *logOpts) (*logHandler, error) {
 	if opts == nil {
 		opts = new(logOpts)
 	}
@@ -143,17 +150,17 @@ func (lh *logHandler) Open(name string) logger {
 	return logger{name: name, mode: lh.mode, ch: lh.ch}
 }
 
-var lh *logHandler
+var defaultLogHandler *logHandler
 
-func Init(path string, mode int, opts *logOpts) (err error) {
-	lh, err = NewLogger(path, mode, opts)
+func Init(path string, mode LogLevel, opts *logOpts) (err error) {
+	defaultLogHandler, err = NewLogger(path, mode, opts)
 	return err
 }
 
 func Open(name string) logger {
-	return lh.Open(name)
+	return defaultLogHandler.Open(name)
 }
 
 func Flush() {
-	lh.Flush()
+	defaultLogHandler.Flush()
 }

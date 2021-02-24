@@ -11,7 +11,7 @@ import (
 type (
 	logger struct {
 		name string
-		mode int
+		mode LogLevel
 		ch   chan message
 	}
 )
@@ -48,28 +48,30 @@ func (l logger) Print(mesg string, args ...interface{}) {
 }
 
 func (l logger) Debug(mesg string, args ...interface{}) {
-	if l.mode < 1 {
-		return
-	}
-	if l.mode > 1 {
-		l.Print(trace(mesg, args...).Error())
-	} else {
+	switch l.mode {
+	case LevelDebug:
 		l.Print(mesg, args...)
+	case LevelTrace:
+		l.Print(trace(mesg, args...).Error())
 	}
 }
 
-func (l logger) Catch() {
-	if e := recover(); e != nil {
+func (l logger) Catch(handler func(interface{})) {
+	e := recover()
+	if e != nil {
 		l.Print(trace("%v", e).Error())
+	}
+	if handler != nil {
+		handler(e)
 	}
 }
 
 func (l logger) Dump(data []byte, mesg string, args ...interface{}) {
-	if l.mode < 1 {
+	if l.mode < LevelDebug {
 		return
 	}
 	l.Print(mesg, args...)
-	if l.mode > 1 {
+	if l.mode > LevelDebug {
 		l.Print(hxdump.DumpWithStyle(data, hxdump.Style{Narrow: true}))
 	}
 }
