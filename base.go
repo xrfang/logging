@@ -84,7 +84,7 @@ func NewLogger(path string, mode LogLevel, opts *Options) (*LogHandler, error) {
 	}
 	go func() {
 		ttl := time.Duration(lh.opts.Cache) * time.Second
-		timer := time.NewTimer(time.Second)
+		ticker := time.NewTicker(time.Second)
 		var msg message
 		for {
 			select {
@@ -92,7 +92,8 @@ func NewLogger(path string, mode LogLevel, opts *Options) (*LogHandler, error) {
 				if msg.rply == nil && len(msg.mesg.text) > 0 {
 					lh.cache[msg.name] = append(lh.cache[msg.name], msg.mesg)
 				}
-			case <-timer.C:
+			case <-ticker.C:
+				msg = message{}
 			}
 			for n, q := range lh.cache {
 				if (msg.rply != nil && (msg.name == n || msg.name == "")) || time.Since(q[0].recv) >= ttl {
