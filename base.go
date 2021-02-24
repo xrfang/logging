@@ -23,7 +23,7 @@ type (
 		name string //保存的文件名
 		mesg batch  //如果mesg为nil，表示强制写盘
 	}
-	logOpts struct {
+	Options struct {
 		Split int         //切分LOG文件的尺寸，默认为10M
 		Keep  int         //历史LOG文件保留数量，默认为10个
 		Mode  os.FileMode //LOG目录的读写权限，默认为0755
@@ -34,16 +34,16 @@ type (
 	logHandler struct {
 		mode  LogLevel
 		path  string
-		opts  *logOpts
+		opts  *Options
 		cache map[string][]batch
 		ch    chan message
 		quit  chan bool
 	}
 )
 
-func NewLogger(path string, mode LogLevel, opts *logOpts) (*logHandler, error) {
+func NewLogger(path string, mode LogLevel, opts *Options) (*logHandler, error) {
 	if opts == nil {
-		opts = new(logOpts)
+		opts = new(Options)
 	}
 	if opts.Keep <= 0 {
 		opts.Keep = 10
@@ -152,7 +152,7 @@ func (lh *logHandler) Open(name string) logger {
 
 var defaultLogHandler *logHandler
 
-func Init(path string, mode LogLevel, opts *logOpts) (err error) {
+func Init(path string, mode LogLevel, opts *Options) (err error) {
 	defaultLogHandler, err = NewLogger(path, mode, opts)
 	return err
 }
