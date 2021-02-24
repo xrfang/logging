@@ -38,15 +38,12 @@ func (l Logger) fmt(format string, args ...interface{}) []string {
 }
 
 func (l Logger) Print(mesg string, args ...interface{}) {
-	msg := message{
+	l.ch <- message{
 		name: l.name,
 		mesg: batch{
 			text: l.fmt(mesg, args...),
 			recv: time.Now(),
 		},
-	}
-	if len(msg.mesg.text) > 0 { //empty message indicates closure of logging facility
-		l.ch <- msg
 	}
 }
 
@@ -77,4 +74,10 @@ func (l Logger) Dump(data []byte, mesg string, args ...interface{}) {
 	if l.mode > LevelDebug {
 		l.Print(hxdump.DumpWithStyle(data, hxdump.Style{Narrow: true}))
 	}
+}
+
+func (l Logger) Flush() {
+	wait := make(chan struct{})
+	l.ch <- message{name: l.name, rply: wait}
+	<-wait
 }

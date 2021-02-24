@@ -26,7 +26,8 @@ type (
 	}
 	message struct {
 		name string //保存的文件名
-		mesg batch  //如果mesg为nil，表示强制写盘
+		mesg batch
+		rply chan struct{} //一般消息的此属性为空，如果非空，表示强制写盘（此时忽略mesg）
 	}
 	Options struct {
 		Split int         //切分LOG文件的尺寸，默认为10M
@@ -42,7 +43,6 @@ type (
 		opts  *Options
 		cache map[string][]batch
 		ch    chan message
-		quit  chan bool
 		wg    sync.WaitGroup
 	}
 )
@@ -81,33 +81,33 @@ func NewLogger(path string, mode LogLevel, opts *Options) (*LogHandler, error) {
 		opts:  opts,
 		cache: make(map[string][]batch),
 		ch:    make(chan message, opts.Queue),
-		quit:  make(chan bool),
 	}
 	go func() {
 		ttl := time.Duration(lh.opts.Cache) * time.Second
 		timer := time.NewTimer(time.Second)
+		var msg message
 		for {
-			finished := false
 			select {
-			case msg := <-lh.ch:
-				if len(msg.mesg.text) == 0 {
-					finished = true
-				} else {
+			case msg = <-lh.ch:
+				if msg.rply == nil && len(msg.mesg.text) > 0 {
 					lh.cache[msg.name] = append(lh.cache[msg.name], msg.mesg)
 				}
 			case <-timer.C:
 			}
 			for n, q := range lh.cache {
-				if finished || time.Since(q[0].recv) >= ttl {
+				if (msg.rply != nil && (msg.name == n || msg.name == "")) || time.Since(q[0].recv) >= ttl {
 					lh.flush(n)
 				}
 			}
-			if finished {
-				break
+			if msg.rply != nil { //是flush指令
+				if msg.name == "" { //name属性为空表示需要结束整个logging组件
+					break
+				}
+				close(msg.rply) //否则仅为flush一个指定的log文件
 			}
 		}
 		lh.wg.Wait()
-		lh.quit <- true
+		close(msg.rply)
 	}()
 	return &lh, nil
 }
@@ -176,8 +176,9 @@ func (lh *LogHandler) flush(name string) {
 }
 
 func (lh *LogHandler) Close() {
-	lh.ch <- message{}
-	<-lh.quit
+	wait := make(chan struct{})
+	lh.ch <- message{rply: wait}
+	<-wait
 }
 
 func (lh *LogHandler) Open(name string) Logger {

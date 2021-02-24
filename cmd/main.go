@@ -10,6 +10,7 @@ import (
 
 func task() {
 	log := logging.Open("task.log")
+	defer log.Flush() //不必要，仅演示Flush()的用途
 	defer log.Catch(func(e interface{}) {
 		if e != nil {
 			fmt.Println("catched something, which we've already logged.")
