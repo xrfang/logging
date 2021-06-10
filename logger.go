@@ -23,10 +23,16 @@ func (l Logger) fmt(format string, args ...interface{}) []string {
 	if len(args) > 0 {
 		format = fmt.Sprintf(format, args...)
 	}
+	gap := false //used to remove excessive empty linese
 	for i, m := range strings.Split(format, "\n") {
 		m = strings.TrimRight(m, " \n\r\t")
 		if m == "" {
-			continue
+			if gap {
+				continue
+			}
+			gap = true
+		} else {
+			gap = false
 		}
 		if i == 0 {
 			msg = append(msg, ts+m)
