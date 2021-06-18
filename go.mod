@@ -1,4 +1,4 @@
-module github.com/xrfang/logging/v2
+module github.com/xrfang/logging
 
 go 1.16
 
