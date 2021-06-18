@@ -14,10 +14,11 @@ func task() {
 		log.Flush()
 		fmt.Println("flushed:", log.Path())
 	}()
-	defer log.Catch(func(e interface{}) {
+	defer log.Catch(func(l logging.Logger, e interface{}) {
 		if e != nil {
 			fmt.Println("catched something, which we've already logged.")
 		}
+		l.Print("program quitting...")
 	})
 	buf := make([]byte, 512)
 	rand.Read(buf)

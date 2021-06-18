@@ -62,13 +62,13 @@ func (l Logger) Debug(mesg string, args ...interface{}) {
 	}
 }
 
-func (l Logger) Catch(handler func(interface{})) {
+func (l Logger) Catch(handler func(Logger, interface{})) {
 	e := recover()
 	if e != nil {
 		l.Print(trace("%v", e).Error())
 	}
 	if handler != nil {
-		handler(e)
+		handler(l, e)
 	}
 }
 
