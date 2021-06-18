@@ -198,13 +198,16 @@ func Init(path string, mode LogLevel, opts *Options) (err error) {
 }
 
 func Open(name string) Logger {
+	assert(defaultLogHandler != nil, "logging not initialized")
 	return defaultLogHandler.Open(name)
 }
 
 func Path() string {
+	assert(defaultLogHandler != nil, "logging not initialized")
 	return defaultLogHandler.Path()
 }
 
 func Finish() {
+	assert(defaultLogHandler != nil, "logging not initialized")
 	defaultLogHandler.Close()
 }
