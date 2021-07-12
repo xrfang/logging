@@ -67,13 +67,16 @@ func NewLogger(path string, mode LogLevel, opts *Options) (*LogHandler, error) {
 	if opts.Queue <= 0 {
 		opts.Queue = 64
 	}
-	path, err := filepath.Abs(path)
-	if err != nil {
-		return nil, err
-	}
-	err = os.MkdirAll(path, opts.Mode)
-	if err != nil {
-		return nil, err
+	if path != "" {
+		var err error
+		path, err = filepath.Abs(path)
+		if err != nil {
+			return nil, err
+		}
+		err = os.MkdirAll(path, opts.Mode)
+		if err != nil {
+			return nil, err
+		}
 	}
 	lh := LogHandler{
 		mode:  mode,
@@ -157,20 +160,23 @@ func (lh *LogHandler) flush(name string) {
 		}
 		delete(lh.cache, name)
 	}()
-	fn := filepath.Join(lh.path, name)
-	st, err := os.Stat(fn)
-	if err == nil && st.Size() > int64(lh.opts.Split) {
-		old := fn + st.ModTime().Format(".2006-01-02_15.04.05")
-		assert(os.Rename(fn, old))
-		lh.wg.Add(1)
-		go lh.rotate(name)
+	f := os.Stderr
+	if lh.path != "" {
+		fn := filepath.Join(lh.path, name)
+		st, err := os.Stat(fn)
+		if err == nil && st.Size() > int64(lh.opts.Split) {
+			old := fn + st.ModTime().Format(".2006-01-02_15.04.05")
+			assert(os.Rename(fn, old))
+			lh.wg.Add(1)
+			go lh.rotate(name)
+		}
+		f, err = os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, lh.opts.fMode)
+		assert(err)
+		defer func() { assert(f.Close()) }()
 	}
-	f, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, lh.opts.fMode)
-	assert(err)
-	defer func() { assert(f.Close()) }()
 	for _, b := range lh.cache[name] {
 		for _, line := range b.text {
-			_, err = fmt.Fprintln(f, line)
+			_, err := fmt.Fprintln(f, line)
 			assert(err)
 		}
 	}
