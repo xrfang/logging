@@ -91,3 +91,7 @@ func (l Logger) Flush() {
 func (l Logger) Path() string {
 	return filepath.Join(l.h.Path(), l.name)
 }
+
+func (l Logger) Level() LogLevel {
+	return l.h.mode
+}
