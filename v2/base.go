@@ -173,7 +173,7 @@ func (lh *LogHandler) flush(name string) {
 		f, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, lh.opts.fMode)
 		assert(err)
 		defer func() { assert(f.Close()) }()
-		if lh.opts.Mode == LevelBrief {
+		if lh.mode == LevelBrief {
 			w = f
 		} else {
 			w = io.MultiWriter(os.Stderr, f)
