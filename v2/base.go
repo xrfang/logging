@@ -160,7 +160,7 @@ func (lh *LogHandler) flush(name string) {
 		}
 		delete(lh.cache, name)
 	}()
-	f := os.Stderr
+	w := io.Writer(os.Stderr)
 	if lh.path != "" {
 		fn := filepath.Join(lh.path, name)
 		st, err := os.Stat(fn)
@@ -170,13 +170,18 @@ func (lh *LogHandler) flush(name string) {
 			lh.wg.Add(1)
 			go lh.rotate(name)
 		}
-		f, err = os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, lh.opts.fMode)
+		f, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, lh.opts.fMode)
 		assert(err)
 		defer func() { assert(f.Close()) }()
+		if lh.opts.Mode == LevelBrief {
+			w = f
+		} else {
+			w = io.MultiWriter(os.Stderr, f)
+		}
 	}
 	for _, b := range lh.cache[name] {
 		for _, line := range b.text {
-			_, err := fmt.Fprintln(f, line)
+			_, err := fmt.Fprintln(w, line)
 			assert(err)
 		}
 	}
