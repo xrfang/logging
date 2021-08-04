@@ -44,6 +44,7 @@ func (l Logger) fmt(format string, args ...interface{}) []string {
 }
 
 func (l Logger) Print(mesg string, args ...interface{}) {
+	assert(l.h != nil, "logger not initialized")
 	l.h.ch <- message{
 		name: l.name,
 		mesg: batch{
