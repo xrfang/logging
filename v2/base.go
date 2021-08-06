@@ -35,6 +35,7 @@ type (
 		Mode  os.FileMode //LOG目录的读写权限，默认为0755
 		Cache int         //LOG在内存中缓存时长，默认为1秒，最短为1秒
 		Queue int         //LOG队列长度，默认为64
+		Shout bool        //是否同时输出到STDERR
 		fMode os.FileMode //LOG文件的读写权限，由目录权限计算得出
 	}
 	LogHandler struct {
@@ -173,10 +174,10 @@ func (lh *LogHandler) flush(name string) {
 		f, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, lh.opts.fMode)
 		assert(err)
 		defer func() { assert(f.Close()) }()
-		if lh.mode == LevelBrief {
-			w = f
-		} else {
+		if lh.opts.Shout {
 			w = io.MultiWriter(os.Stderr, f)
+		} else {
+			w = f
 		}
 	}
 	for _, b := range lh.cache[name] {
