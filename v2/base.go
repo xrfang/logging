@@ -32,11 +32,10 @@ type (
 	Options struct {
 		Split int         //切分LOG文件的尺寸，默认为10M
 		Keep  int         //历史LOG文件保留数量，默认为10个
-		Mode  os.FileMode //LOG目录的读写权限，默认为0755
-		Cache int         //LOG在内存中缓存时长，默认为1秒，最短为1秒
+		Mode  os.FileMode //LOG目录的读写权限（已废弃，使用系统umask）
+		Cache int         //LOG在内存中缓存时长（已废弃，固定为1秒）
 		Queue int         //LOG队列长度，默认为64
 		Shout bool        //是否同时输出到STDERR
-		fMode os.FileMode //LOG文件的读写权限，由目录权限计算得出
 	}
 	LogHandler struct {
 		mode  LogLevel
@@ -55,15 +54,8 @@ func NewLogger(path string, mode LogLevel, opts *Options) (*LogHandler, error) {
 	if opts.Keep <= 0 {
 		opts.Keep = 10
 	}
-	if opts.Mode == 0 {
-		opts.Mode = 0755
-	}
-	opts.fMode = opts.Mode & 0666
 	if opts.Split <= 0 {
 		opts.Split = 10 * 1024 * 1024
-	}
-	if opts.Cache <= 1 {
-		opts.Cache = 1
 	}
 	if opts.Queue <= 0 {
 		opts.Queue = 64
@@ -74,7 +66,7 @@ func NewLogger(path string, mode LogLevel, opts *Options) (*LogHandler, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = os.MkdirAll(path, opts.Mode)
+		err = os.MkdirAll(path, 0777)
 		if err != nil {
 			return nil, err
 		}
@@ -87,7 +79,6 @@ func NewLogger(path string, mode LogLevel, opts *Options) (*LogHandler, error) {
 		ch:    make(chan message, opts.Queue),
 	}
 	go func() {
-		ttl := time.Duration(lh.opts.Cache) * time.Second
 		ticker := time.NewTicker(time.Second)
 		var msg message
 		for {
@@ -100,7 +91,7 @@ func NewLogger(path string, mode LogLevel, opts *Options) (*LogHandler, error) {
 				msg = message{}
 			}
 			for n, q := range lh.cache {
-				if (msg.rply != nil && (msg.name == n || msg.name == "")) || time.Since(q[0].recv) >= ttl {
+				if (msg.rply != nil && (msg.name == n || msg.name == "")) || time.Since(q[0].recv) >= time.Second {
 					lh.flush(n)
 				}
 			}
@@ -171,7 +162,7 @@ func (lh *LogHandler) flush(name string) {
 			lh.wg.Add(1)
 			go lh.rotate(name)
 		}
-		f, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, lh.opts.fMode)
+		f, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 		assert(err)
 		defer func() { assert(f.Close()) }()
 		if lh.opts.Shout {
