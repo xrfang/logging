@@ -63,6 +63,12 @@ func (l Logger) Debug(mesg string, args ...interface{}) {
 	}
 }
 
+func (l Logger) Trace(mesg string, args ...interface{}) {
+	if l.h.mode == LevelTrace {
+		l.Print(mesg, args...)
+	}
+}
+
 func (l Logger) Catch(handler func(Logger, interface{})) {
 	e := recover()
 	if e != nil {

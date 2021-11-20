@@ -193,6 +193,15 @@ func (lh *LogHandler) Open(name string) Logger {
 	return Logger{name: name, h: lh}
 }
 
+func (lh *LogHandler) SetLevel(level LogLevel) {
+	if level < LevelBrief {
+		level = LevelBrief
+	} else if level > LevelTrace {
+		level = LevelTrace
+	}
+	lh.mode = level
+}
+
 var defaultLogHandler *LogHandler
 
 func Init(path string, mode LogLevel, opts *Options) (err error) {
@@ -213,4 +222,9 @@ func Path() string {
 func Finish() {
 	assert(defaultLogHandler != nil, "logging not initialized")
 	defaultLogHandler.Close()
+}
+
+func SetLevel(level LogLevel) {
+	assert(defaultLogHandler != nil, "logging not initialized")
+	defaultLogHandler.SetLevel(level)
 }
