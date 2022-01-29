@@ -73,12 +73,12 @@ func NewLogger(path string, mode LogLevel, opts *Options) (*LogHandler, error) {
 		return nil, err
 	}
 	lh := LogHandler{
-		mode:  mode,
 		path:  path,
 		opts:  opts,
 		cache: make(map[string][]batch),
 		ch:    make(chan message, opts.Queue),
 	}
+	lh.SetLevel(mode)
 	go func() {
 		ticker := time.NewTicker(time.Second)
 		var msg message
