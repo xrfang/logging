@@ -221,3 +221,7 @@ func SetLevel(level LogLevel) {
 	assert(defaultLogHandler != nil, "logging not initialized")
 	defaultLogHandler.SetLevel(level)
 }
+
+func DefaultHandler() *LogHandler {
+	return defaultLogHandler
+}
