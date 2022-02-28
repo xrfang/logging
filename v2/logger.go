@@ -71,7 +71,7 @@ func (l Logger) Trace(mesg string, args ...interface{}) {
 
 func (l Logger) Catch(handler func(Logger, interface{})) {
 	e := recover()
-	if e != nil {
+	if e != nil && handler == nil {
 		l.Print(trace("%v", e).Error())
 	}
 	if handler != nil {
