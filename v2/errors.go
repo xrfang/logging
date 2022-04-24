@@ -7,8 +7,21 @@ import (
 	"strings"
 )
 
+type (
+	TracedError interface {
+		Err() error
+		Error() string
+		Stack() []string
+		Trace()
+	}
+	tracedError struct {
+		err   error
+		trace []string
+	}
+)
+
 func assert(e interface{}, ntfy ...interface{}) {
-	var err *TracedError
+	var err *tracedError
 	switch e.(type) {
 	case nil:
 	case bool:
@@ -20,12 +33,12 @@ func assert(e interface{}, ntfy ...interface{}) {
 					mesg = fmt.Sprintf(mesg, ntfy[1:]...)
 				}
 			}
-			err = &TracedError{err: errors.New(mesg)}
+			err = &tracedError{err: errors.New(mesg)}
 		}
 	case error:
-		err = &TracedError{err: e.(error)}
+		err = &tracedError{err: e.(error)}
 	default:
-		err = &TracedError{err: fmt.Errorf("assert: expect error or bool, got %T", e)}
+		err = &tracedError{err: fmt.Errorf("assert: expect error or bool, got %T", e)}
 	}
 	if err != nil {
 		err.Trace()
@@ -33,12 +46,7 @@ func assert(e interface{}, ntfy ...interface{}) {
 	}
 }
 
-type TracedError struct {
-	err   error
-	trace []string
-}
-
-func (te *TracedError) Trace() {
+func (te *tracedError) Trace() {
 	if len(te.trace) > 0 {
 		return
 	}
@@ -60,11 +68,11 @@ func (te *TracedError) Trace() {
 	}
 }
 
-func (te TracedError) Err() error {
+func (te tracedError) Err() error {
 	return te.err
 }
 
-func (te TracedError) Error() string {
+func (te tracedError) Error() string {
 	stack := []string{te.Err().Error()}
 	for _, t := range te.trace {
 		stack = append(stack, "\t"+t)
@@ -72,15 +80,15 @@ func (te TracedError) Error() string {
 	return strings.Join(stack, "\n")
 }
 
-func (te TracedError) Stack() []string {
+func (te tracedError) Stack() []string {
 	return te.trace
 }
 
-func trace(args ...interface{}) *TracedError {
+func trace(args ...interface{}) *tracedError {
 	if len(args) == 0 {
 		return nil
 	}
-	var te TracedError
+	var te tracedError
 	switch args[0].(type) {
 	case string:
 		te.err = fmt.Errorf(args[0].(string), args[1:]...)

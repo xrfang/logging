@@ -55,7 +55,7 @@ func (l Logger) Print(mesg string, args ...interface{}) {
 }
 
 func (l Logger) Debug(mesg string, args ...interface{}) {
-	err := TracedError{err: fmt.Errorf(mesg, args...)}
+	err := tracedError{err: fmt.Errorf(mesg, args...)}
 	switch l.h.mode {
 	case LevelDebug:
 		l.Print(err.Err().Error())
@@ -71,16 +71,16 @@ func (l Logger) Trace(mesg string, args ...interface{}) {
 	}
 }
 
-func (l Logger) Catch(handler func(Logger, *TracedError)) {
-	var err *TracedError
+func (l Logger) Catch(handler func(Logger, interface{})) {
+	var err *tracedError
 	switch e := recover().(type) {
 	case nil:
-	case *TracedError:
+	case *tracedError:
 		err = e
 	case error:
-		err = &TracedError{err: e}
+		err = &tracedError{err: e}
 	default:
-		err = &TracedError{err: fmt.Errorf("%v", e)}
+		err = &tracedError{err: fmt.Errorf("%v", e)}
 	}
 	err.Trace()
 	if err != nil && handler == nil {
