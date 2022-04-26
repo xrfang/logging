@@ -65,7 +65,9 @@ func (ex *exception) Trace() {
 			continue
 		}
 		fn := strings.Split(file, "/")
-		file = strings.Join(fn[len(fn)-2:], "/")
+		if len(fn) > 1 {
+			file = strings.Join(fn[len(fn)-2:], "/")
+		}
 		ex.trace = append(ex.trace, fmt.Sprintf("(%s:%d) %s", file, line, name))
 	}
 }
