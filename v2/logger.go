@@ -79,10 +79,10 @@ func (l Logger) Catch(handler func(Logger, interface{})) {
 		}
 		return
 	}
-	var err *exception
+	var err TracedError
 	switch e.(type) {
-	case *exception:
-		err = e.(*exception)
+	case TracedError:
+		err = e.(TracedError)
 	case error:
 		err = &exception{err: e.(error)}
 		err.Trace()
