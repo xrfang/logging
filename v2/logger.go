@@ -72,14 +72,16 @@ func (l Logger) Trace(mesg string, args ...interface{}) {
 }
 
 func (l Logger) Catch(handler func(Logger, interface{})) {
+	var err TracedError
+	defer func() {
+		if handler != nil {
+			handler(l, err)
+		}
+	}()
 	e := recover()
 	if e == nil {
-		if handler != nil {
-			handler(l, nil)
-		}
 		return
 	}
-	var err TracedError
 	switch e.(type) {
 	case TracedError:
 		err = e.(TracedError)
@@ -90,11 +92,7 @@ func (l Logger) Catch(handler func(Logger, interface{})) {
 		err = &exception{err: fmt.Errorf("%v", e)}
 		err.Trace()
 	}
-	if handler == nil {
-		l.Print(err.Error())
-	} else {
-		handler(l, err)
-	}
+	l.Print(err.Error())
 }
 
 func (l Logger) Dump(data []byte, mesg string, args ...interface{}) {
