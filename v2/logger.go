@@ -1,12 +1,11 @@
 package logging
 
 import (
+	"encoding/hex"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/xrfang/hxdump"
 )
 
 type (
@@ -85,7 +84,7 @@ func (l Logger) Dump(data []byte, mesg string, args ...interface{}) {
 	}
 	l.Print(mesg, args...)
 	if l.h.mode > LevelDebug {
-		l.Print(hxdump.DumpWithStyle(data, hxdump.Style{Narrow: true}))
+		l.Print(strings.TrimSpace(hex.Dump(data)))
 	}
 }
 
