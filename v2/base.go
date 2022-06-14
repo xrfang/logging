@@ -121,7 +121,7 @@ func (lh *LogHandler) rotate(name string) {
 		func(fn string) {
 			defer func() {
 				if e := recover(); e != nil {
-					fmt.Fprintln(os.Stderr, trace("LogHandler.rotate: %v", e))
+					fmt.Fprintln(os.Stderr, e)
 					return
 				}
 				os.Remove(fn)
@@ -149,7 +149,7 @@ func (lh *LogHandler) rotate(name string) {
 func (lh *LogHandler) flush(name string) {
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Fprintln(os.Stderr, trace("LogHandler.flush: %v", e))
+			fmt.Fprintln(os.Stderr, e)
 		}
 		delete(lh.cache, name)
 	}()
