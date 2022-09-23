@@ -81,17 +81,16 @@ func (l Logger) Catch(handler func(Logger, interface{})) {
 	if e == nil {
 		return
 	}
-	switch e.(type) {
+	switch te := e.(type) {
 	case TracedError:
-		err = e.(TracedError)
+		err = te
 	case error:
-		err = &exception{err: e.(error)}
+		err = &exception{err: te}
 		err.Trace()
 	default:
 		err = &exception{err: fmt.Errorf("%v", e)}
 		err.Trace()
 	}
-	l.Print(err.Error())
 }
 
 func (l Logger) Dump(data []byte, mesg string, args ...interface{}) {
