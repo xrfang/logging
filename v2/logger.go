@@ -75,7 +75,7 @@ func (l Logger) Catch(handler func(Logger, interface{})) {
 	defer func() {
 		if handler != nil {
 			handler(l, err)
-		} else {
+		} else if err != nil {
 			l.Print("[CATCH] %v", err)
 		}
 	}()
