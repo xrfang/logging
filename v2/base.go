@@ -153,6 +153,7 @@ func (lh *LogHandler) flush(name string) {
 		}
 		delete(lh.cache, name)
 	}()
+	assert(os.MkdirAll(lh.path, 0777))
 	fn := filepath.Join(lh.path, name)
 	st, err := os.Stat(fn)
 	if err == nil && st.Size() > int64(lh.opts.Split) {
